@@ -1,0 +1,68 @@
+Task Manager — Spring Boot приложение, предоставляющее REST API для управления задачами.
+
+Приложение позволяет:
+- регистрировать пользователей;
+- аутентифицироваться с помощью JWT;
+- создавать, обновлять, удалять и просматривать задачи;
+- фильтровать задачи по статусу и срокам выполнения;
+- получать статистику и метрики работы системы.
+
+Технологический стек
+- Java 21
+- Spring Boot 3.x
+- Spring Web (REST API)
+- Spring Security + JWT
+- Spring Data JPA
+- PostgreSQL
+- Spring Boot Actuator
+- Logback
+- Maven
+
+Архитектура приложения
+[ Client ]
+|
+v
+[ REST API (Controllers) ]
+|
+v
+[ Service Layer (Business Logic) ]
+|
+v
+[ Database Module (JPA / Repositories) ]
+|
++--> Security Module (JWT, Filters, Access Control)
+|
++--> Monitoring & Logging Module
+
+Функциональные требования
+- Регистрация и аутентификация пользователей
+- CRUD-операции над задачами
+- Фильтрация задач по статусу и дедлайну
+- Защищённый REST API
+- Метрики состояния системы
+
+Нефункциональные требования
+- Масштабируемость
+- Отказоустойчивость
+- Централизованное логирование
+- Оптимизированная работа с БД
+
+API Endpoints
+Аутентификация
+- POST /api/auth/register     - Регистрация
+- POST /api/auth/login        - Вход
+- POST /api/auth/refresh      - Обновление токена
+
+Пользователи
+- GET    /api/users/{id_user}  - Получить профиль {id_user}
+- PUT    /api/users/{id_user}  - Обновить профиль {id_user}
+- DELETE /api/users/{id_user}  - Удалить аккаунт {id_user}
+
+Задачи
+- GET    /api/tasks            - Получить все задачи
+- GET    /api/tasks/{id}       - Получить задачу по ID
+- POST   /api/tasks            - Создать задачу
+- PUT    /api/tasks/{id}       - Обновить задачу
+- DELETE /api/tasks/{id}       - Удалить задачу
+- GET    /api/tasks/filter     - Фильтрация задач
+- GET    /api/tasks/stats      - Статистика задач

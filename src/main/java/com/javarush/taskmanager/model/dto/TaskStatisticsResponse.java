@@ -10,10 +10,10 @@ public class TaskStatisticsResponse {
     /**
      * Total number of tasks owned by the user.
      */
-    private final long totalTasks;
+    private long totalTasks;
 
     /**
      * Number of completed tasks owned by the user.
      */
-    private final long completedTasks;
+    private long completedTasks;
 }

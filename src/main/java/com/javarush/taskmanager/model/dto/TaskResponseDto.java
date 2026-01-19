@@ -10,9 +10,9 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class TaskResponseDto {
 
-    private final Long id;
-    private final String title;
-    private final String description;
-    private final TaskStatus status;
-    private final LocalDate deadline;
+    private Long id;
+    private String title;
+    private String description;
+    private TaskStatus status;
+    private LocalDate deadline;
 }

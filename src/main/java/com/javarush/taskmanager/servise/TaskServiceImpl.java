@@ -9,6 +9,7 @@ import com.javarush.taskmanager.model.entity.User;
 import com.javarush.taskmanager.model.mapper.TaskMapper;
 import com.javarush.taskmanager.repository.TaskRepository;
 import com.javarush.taskmanager.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,7 @@ import java.util.List;
 
 @Service
 @Transactional
+@Slf4j
 public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
@@ -36,6 +38,8 @@ public class TaskServiceImpl implements TaskService {
     public List<TaskResponseDto> getAllTasks() {
         User currentUser = getCurrentUser();
 
+        log.info("Fetching all tasks for userId={}", currentUser.getId());
+
         return taskRepository.findAllByOwner(currentUser)
                 .stream()
                 .map(taskMapper::toResponseDto)
@@ -45,6 +49,8 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(readOnly = true)
     public TaskResponseDto getTaskById(Long id) {
+        log.info("Fetching task by id={}", id);
+
         Task task = getTaskOrThrow(id);
         return taskMapper.toResponseDto(task);
     }
@@ -53,25 +59,38 @@ public class TaskServiceImpl implements TaskService {
     public TaskResponseDto createTask(TaskRequestDto request) {
         User currentUser = getCurrentUser();
 
+        log.info("Creating task for userId={}, title={}",
+                currentUser.getId(), request.getTitle());
+
         Task task = taskMapper.toEntity(request, currentUser);
         Task savedTask = taskRepository.save(task);
+
+        log.info("Task created: id={}, userId={}",
+                savedTask.getId(), currentUser.getId());
 
         return taskMapper.toResponseDto(savedTask);
     }
 
     @Override
     public TaskResponseDto updateTask(Long id, TaskRequestDto request) {
-        Task task = getTaskOrThrow(id);
+        log.info("Updating task id={}", id);
 
+        Task task = getTaskOrThrow(id);
         taskMapper.updateEntity(task, request);
+
+        log.info("Task updated successfully: id={}", id);
 
         return taskMapper.toResponseDto(task);
     }
 
     @Override
     public void deleteTask(Long id) {
+        log.info("Deleting task id={}", id);
+
         Task task = getTaskOrThrow(id);
         taskRepository.delete(task);
+
+        log.info("Task deleted successfully: id={}", id);
     }
 
     @Override
@@ -81,6 +100,9 @@ public class TaskServiceImpl implements TaskService {
                                              String toDeadline) {
 
         User currentUser = getCurrentUser();
+
+        log.info("Filtering tasks for userId={}, status={}, from={}, to={}",
+                currentUser.getId(), status, fromDeadline, toDeadline);
 
         TaskStatus taskStatus =
                 status != null ? TaskStatus.valueOf(status) : null;
@@ -102,6 +124,8 @@ public class TaskServiceImpl implements TaskService {
     public TaskStatisticsResponse getStatistics() {
         User currentUser = getCurrentUser();
 
+        log.info("Fetching task statistics for userId={}", currentUser.getId());
+
         long total = taskRepository.countByOwner(currentUser);
         long completed =
                 taskRepository.countByOwnerAndStatus(currentUser, TaskStatus.COMPLETED);
@@ -113,12 +137,19 @@ public class TaskServiceImpl implements TaskService {
         User currentUser = getCurrentUser();
 
         return taskRepository.findByIdAndOwner(id, currentUser)
-                .orElseThrow(() -> new RuntimeException("Task not found"));
+                .orElseThrow(() -> {
+                    log.warn("Task not found: id={}, userId={}",
+                            id, currentUser.getId());
+                    return new RuntimeException("Task not found");
+                });
     }
 
     private User getCurrentUser() {
         // TODO replace with SecurityContext + JWT
         return userRepository.findByUsername("test")
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> {
+                    log.error("Current user not found (username=test)");
+                    return new RuntimeException("User not found");
+                });
     }
 }

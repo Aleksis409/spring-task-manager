@@ -27,3 +27,17 @@ spring:
     init:
       mode: never
 
+  springdoc:
+    api-docs:
+      path: /api-docs
+    swagger-ui:
+      path: /swagger-ui.html
+      operations-sorter: method
+      tags-sorter: alpha
+      default-consumes-media-type: application/json
+      default-produces-media-type: application/json
+
+  logging:
+    level:
+      org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
+#      org.springframework.security: DEBUG

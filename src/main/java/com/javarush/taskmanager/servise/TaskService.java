@@ -2,6 +2,7 @@ package com.javarush.taskmanager.servise;
 
 import com.javarush.taskmanager.model.dto.TaskRequestDto;
 import com.javarush.taskmanager.model.dto.TaskResponseDto;
+import com.javarush.taskmanager.model.dto.TaskStatisticsResponse;
 
 import java.util.List;
 
@@ -19,5 +20,5 @@ public interface TaskService {
 
     List<TaskResponseDto> filterTasks(String status, String fromDeadline, String toDeadline);
 
-    Object getStatistics();
+    TaskStatisticsResponse getStatistics();
 }

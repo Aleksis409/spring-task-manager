@@ -9,6 +9,7 @@ import com.javarush.taskmanager.model.entity.User;
 import com.javarush.taskmanager.model.mapper.TaskMapper;
 import com.javarush.taskmanager.repository.TaskRepository;
 import com.javarush.taskmanager.repository.UserRepository;
+import com.javarush.taskmanager.security.CurrentUserProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
@@ -22,21 +23,21 @@ import java.util.List;
 public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
-    private final UserRepository userRepository;
     private final TaskMapper taskMapper;
+    private final CurrentUserProvider currentUserProvider;
 
     public TaskServiceImpl(TaskRepository taskRepository,
-                           UserRepository userRepository,
-                           TaskMapper taskMapper) {
+                           TaskMapper taskMapper,
+                           CurrentUserProvider currentUserProvider) {
         this.taskRepository = taskRepository;
-        this.userRepository = userRepository;
         this.taskMapper = taskMapper;
+        this.currentUserProvider = currentUserProvider;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TaskResponseDto> getAllTasks() {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
 
         log.info("Fetching all tasks for userId={}", currentUser.getId());
 
@@ -57,7 +58,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public TaskResponseDto createTask(TaskRequestDto request) {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
 
         log.info("Creating task for userId={}, title={}",
                 currentUser.getId(), request.getTitle());
@@ -99,7 +100,7 @@ public class TaskServiceImpl implements TaskService {
                                              String fromDeadline,
                                              String toDeadline) {
 
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
 
         log.info("Filtering tasks for userId={}, status={}, from={}, to={}",
                 currentUser.getId(), status, fromDeadline, toDeadline);
@@ -122,7 +123,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(readOnly = true)
     public TaskStatisticsResponse getStatistics() {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
 
         log.info("Fetching task statistics for userId={}", currentUser.getId());
 
@@ -134,7 +135,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private Task getTaskOrThrow(Long id) {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserProvider.getCurrentUser();
 
         return taskRepository.findByIdAndOwner(id, currentUser)
                 .orElseThrow(() -> {
@@ -143,13 +144,5 @@ public class TaskServiceImpl implements TaskService {
                     return new RuntimeException("Task not found");
                 });
     }
-
-    private User getCurrentUser() {
-        // TODO replace with SecurityContext + JWT
-        return userRepository.findByUsername("test")
-                .orElseThrow(() -> {
-                    log.error("Current user not found (username=test)");
-                    return new RuntimeException("User not found");
-                });
-    }
 }
+

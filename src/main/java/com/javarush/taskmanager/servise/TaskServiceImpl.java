@@ -25,19 +25,22 @@ public class TaskServiceImpl implements TaskService {
     private final TaskRepository taskRepository;
     private final TaskMapper taskMapper;
     private final CurrentUserProvider currentUserProvider;
+    private final UserServiceImpl userServiceImpl;
 
     public TaskServiceImpl(TaskRepository taskRepository,
                            TaskMapper taskMapper,
-                           CurrentUserProvider currentUserProvider) {
+                           CurrentUserProvider currentUserProvider,
+                           UserServiceImpl userServiceImpl) {
         this.taskRepository = taskRepository;
         this.taskMapper = taskMapper;
         this.currentUserProvider = currentUserProvider;
+        this.userServiceImpl = userServiceImpl;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TaskResponseDto> getAllTasks() {
-        User currentUser = currentUserProvider.getCurrentUser();
+        User currentUser = getCurrentUserEntity();
 
         log.info("Fetching all tasks for userId={}", currentUser.getId());
 
@@ -58,7 +61,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public TaskResponseDto createTask(TaskRequestDto request) {
-        User currentUser = currentUserProvider.getCurrentUser();
+        User currentUser = getCurrentUserEntity();
 
         log.info("Creating task for userId={}, title={}",
                 currentUser.getId(), request.getTitle());
@@ -100,7 +103,7 @@ public class TaskServiceImpl implements TaskService {
                                              String fromDeadline,
                                              String toDeadline) {
 
-        User currentUser = currentUserProvider.getCurrentUser();
+        User currentUser = getCurrentUserEntity();
 
         log.info("Filtering tasks for userId={}, status={}, from={}, to={}",
                 currentUser.getId(), status, fromDeadline, toDeadline);
@@ -123,7 +126,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(readOnly = true)
     public TaskStatisticsResponse getStatistics() {
-        User currentUser = currentUserProvider.getCurrentUser();
+        User currentUser = getCurrentUserEntity();
 
         log.info("Fetching task statistics for userId={}", currentUser.getId());
 
@@ -135,7 +138,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private Task getTaskOrThrow(Long id) {
-        User currentUser = currentUserProvider.getCurrentUser();
+        User currentUser = getCurrentUserEntity();
 
         return taskRepository.findByIdAndOwner(id, currentUser)
                 .orElseThrow(() -> {
@@ -143,6 +146,11 @@ public class TaskServiceImpl implements TaskService {
                             id, currentUser.getId());
                     return new RuntimeException("Task not found");
                 });
+    }
+
+    private User getCurrentUserEntity() {
+        Long userId = currentUserProvider.getCurrentUserId();
+        return userServiceImpl.getById(userId);
     }
 }
 

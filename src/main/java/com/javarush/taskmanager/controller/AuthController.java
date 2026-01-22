@@ -1,5 +1,7 @@
 package com.javarush.taskmanager.controller;
 
+import com.javarush.taskmanager.model.dto.AuthRequest;
+import com.javarush.taskmanager.model.dto.AuthResponse;
 import com.javarush.taskmanager.model.dto.UserRegistrationRequest;
 import com.javarush.taskmanager.model.dto.UserRegistrationResponse;
 import com.javarush.taskmanager.servise.AuthService;
@@ -31,11 +33,19 @@ public class AuthController {
 
         UserRegistrationResponse response = authService.register(request);
 
-        log.info("HTTP POST /api/auth/register completed for username={}",
-                request.getUsername());
-
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(
+            @RequestBody @Valid AuthRequest request) {
+
+        log.info("HTTP POST /api/auth/login username={}", request.getUsername());
+
+        AuthResponse response = authService.login(request);
+
+        return ResponseEntity.ok(response);
     }
 }

@@ -14,37 +14,20 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CurrentUserProvider {
 
-    private final UserRepository userRepository;
-
-    public User getCurrentUser() {
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null ||
-                !authentication.isAuthenticated() ||
-                authentication instanceof AnonymousAuthenticationToken) {
-
-            throw new AccessDeniedException("Unauthorized");
-        }
-
-        String username = authentication.getName();
-
-        return userRepository.findByUsername(username)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException("User not found: " + username)
-                );
-    }
-
-    public Long getCurrentUserId() {
+    public SecurityUser getCurrentUser() {
         Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null ||
                 !(authentication.getPrincipal() instanceof SecurityUser securityUser)) {
-            throw new RuntimeException("Unauthorized");
+            throw new AccessDeniedException("Unauthorized");
         }
 
-        return securityUser.getId();
+        return securityUser;
+    }
+
+    public Long getCurrentUserId() {
+        return getCurrentUser().getId();
     }
 }
 

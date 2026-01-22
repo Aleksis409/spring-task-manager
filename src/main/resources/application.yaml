@@ -27,17 +27,21 @@ spring:
     init:
       mode: never
 
-  springdoc:
-    api-docs:
-      path: /api-docs
-    swagger-ui:
-      path: /swagger-ui.html
-      operations-sorter: method
-      tags-sorter: alpha
-      default-consumes-media-type: application/json
-      default-produces-media-type: application/json
-
   logging:
     level:
-      org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
-#      org.springframework.security: DEBUG
+      org.springframework.web.filter.CommonsRequestLoggingFilter: INFO
+  #      org.springframework.security: DEBUG
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    default-consumes-media-type: application/json
+    default-produces-media-type: application/json
+
+jwt:
+  secret: "change-this-super-secret-key-which-is-at-least-256-bits"
+  expiration: 3600000

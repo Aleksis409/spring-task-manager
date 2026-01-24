@@ -22,7 +22,7 @@ public class SecurityUserDetailsService implements UserDetailsService {
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() ->
-                        new UsernameNotFoundException("User not found: " + username));
+                        new UsernameNotFoundException("User not found"));
 
         return new SecurityUser(user);
     }

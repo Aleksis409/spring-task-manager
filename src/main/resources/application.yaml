@@ -40,8 +40,17 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
     default-consumes-media-type: application/json
-    default-produces-media-type: application/json
 
 jwt:
   secret: "change-this-super-secret-key-which-is-at-least-256-bits"
-  expiration: 3600000
+  access-expiration: 900000     # 15 min
+  refresh-expiration: 604800000 # 7 days
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized

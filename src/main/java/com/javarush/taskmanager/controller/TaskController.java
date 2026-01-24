@@ -3,7 +3,7 @@ package com.javarush.taskmanager.controller;
 import com.javarush.taskmanager.model.dto.TaskRequestDto;
 import com.javarush.taskmanager.model.dto.TaskResponseDto;
 import com.javarush.taskmanager.model.dto.TaskStatisticsResponse;
-import com.javarush.taskmanager.servise.TaskService;
+import com.javarush.taskmanager.service.TaskService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

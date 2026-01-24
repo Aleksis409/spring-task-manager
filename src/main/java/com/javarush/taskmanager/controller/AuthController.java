@@ -1,10 +1,7 @@
 package com.javarush.taskmanager.controller;
 
-import com.javarush.taskmanager.model.dto.AuthRequest;
-import com.javarush.taskmanager.model.dto.AuthResponse;
-import com.javarush.taskmanager.model.dto.UserRegistrationRequest;
-import com.javarush.taskmanager.model.dto.UserRegistrationResponse;
-import com.javarush.taskmanager.servise.AuthService;
+import com.javarush.taskmanager.model.dto.*;
+import com.javarush.taskmanager.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -32,7 +29,6 @@ public class AuthController {
         log.info("HTTP POST /api/auth/register username={}", request.getUsername());
 
         UserRegistrationResponse response = authService.register(request);
-
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
@@ -45,7 +41,14 @@ public class AuthController {
         log.info("HTTP POST /api/auth/login username={}", request.getUsername());
 
         AuthResponse response = authService.login(request);
-
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @RequestBody LogoutRequest request) {
+
+        authService.logout(request.getRefreshToken());
+        return ResponseEntity.noContent().build();
     }
 }

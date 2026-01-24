@@ -1,7 +1,7 @@
 package com.javarush.taskmanager.controller;
 
 import com.javarush.taskmanager.model.dto.ChangeUserRoleRequest;
-import com.javarush.taskmanager.servise.UserService;
+import com.javarush.taskmanager.service.UserService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

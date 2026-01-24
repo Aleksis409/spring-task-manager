@@ -1,4 +1,4 @@
-package com.javarush.taskmanager.servise;
+package com.javarush.taskmanager.service.iml;
 
 import com.javarush.taskmanager.enums.TaskStatus;
 import com.javarush.taskmanager.model.dto.TaskRequestDto;
@@ -8,8 +8,8 @@ import com.javarush.taskmanager.model.entity.Task;
 import com.javarush.taskmanager.model.entity.User;
 import com.javarush.taskmanager.model.mapper.TaskMapper;
 import com.javarush.taskmanager.repository.TaskRepository;
-import com.javarush.taskmanager.repository.UserRepository;
 import com.javarush.taskmanager.security.CurrentUserProvider;
+import com.javarush.taskmanager.service.TaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
@@ -108,14 +108,9 @@ public class TaskServiceImpl implements TaskService {
         log.info("Filtering tasks for userId={}, status={}, from={}, to={}",
                 currentUser.getId(), status, fromDeadline, toDeadline);
 
-        TaskStatus taskStatus =
-                status != null ? TaskStatus.valueOf(status) : null;
-
-        LocalDate from =
-                fromDeadline != null ? LocalDate.parse(fromDeadline) : null;
-
-        LocalDate to =
-                toDeadline != null ? LocalDate.parse(toDeadline) : null;
+        TaskStatus taskStatus = status != null ? TaskStatus.valueOf(status) : null;
+        LocalDate from = fromDeadline != null ? LocalDate.parse(fromDeadline) : null;
+        LocalDate to = toDeadline != null ? LocalDate.parse(toDeadline) : null;
 
         return taskRepository.filterTasks(currentUser, taskStatus, from, to)
                 .stream()
@@ -131,8 +126,7 @@ public class TaskServiceImpl implements TaskService {
         log.info("Fetching task statistics for userId={}", currentUser.getId());
 
         long total = taskRepository.countByOwner(currentUser);
-        long completed =
-                taskRepository.countByOwnerAndStatus(currentUser, TaskStatus.COMPLETED);
+        long completed = taskRepository.countByOwnerAndStatus(currentUser, TaskStatus.COMPLETED);
 
         return new TaskStatisticsResponse(total, completed);
     }

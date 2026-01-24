@@ -1,6 +1,5 @@
 package com.javarush.taskmanager.security.jwt;
 
-import com.javarush.taskmanager.model.entity.User;
 import com.javarush.taskmanager.security.SecurityUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -8,6 +7,7 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
@@ -15,22 +15,35 @@ import java.util.Date;
 public class JwtService {
 
     private final Key secretKey;
-    private final long expiration;
+
+    private final long accessExpiration;
+    private final long refreshExpiration;
 
     public JwtService(
             @Value("${jwt.secret}") String secret,
-            @Value("${jwt.expiration}") long expiration
+            @Value("${jwt.access-expiration}") long accessExpiration,
+            @Value("${jwt.refresh-expiration}") long refreshExpiration
     ) {
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes());
-        this.expiration = expiration;
+        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.accessExpiration = accessExpiration;
+        this.refreshExpiration = refreshExpiration;
     }
 
-    public String generateToken(String userName) {
+    public String generateAccessToken(SecurityUser user) {
+        return buildToken(user.getUsername(), accessExpiration);
+    }
+
+    public String generateRefreshToken(SecurityUser user) {
+        return buildToken(user.getUsername(), refreshExpiration);
+    }
+
+    private String buildToken(String subject, long ttl) {
+
         Date now = new Date();
-        Date exp = new Date(now.getTime() + expiration);
+        Date exp = new Date(now.getTime() + ttl);
 
         return Jwts.builder()
-                .setSubject(userName)
+                .setSubject(subject)
                 .setIssuedAt(now)
                 .setExpiration(exp)
                 .signWith(secretKey)
@@ -41,11 +54,14 @@ public class JwtService {
         return getClaims(token).getSubject();
     }
 
-    public boolean isTokenValid(String token, SecurityUser securityUser) {
+    public boolean isTokenValid(String token, SecurityUser user) {
+
         try {
             Claims claims = getClaims(token);
-            String username = claims.getSubject();
-            return username.equals(securityUser.getUsername());
+
+            return claims.getSubject().equals(user.getUsername()) &&
+                    claims.getExpiration().after(new Date());
+
         } catch (Exception e) {
             return false;
         }
@@ -59,3 +75,4 @@ public class JwtService {
                 .getBody();
     }
 }
+

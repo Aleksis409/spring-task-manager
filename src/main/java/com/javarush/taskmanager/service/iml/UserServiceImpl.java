@@ -1,8 +1,9 @@
-package com.javarush.taskmanager.servise;
+package com.javarush.taskmanager.service.iml;
 
 import com.javarush.taskmanager.enums.UserRole;
 import com.javarush.taskmanager.model.entity.User;
 import com.javarush.taskmanager.repository.UserRepository;
+import com.javarush.taskmanager.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

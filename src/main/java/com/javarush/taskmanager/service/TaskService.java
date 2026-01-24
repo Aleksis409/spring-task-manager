@@ -1,4 +1,4 @@
-package com.javarush.taskmanager.servise;
+package com.javarush.taskmanager.service;
 
 import com.javarush.taskmanager.model.dto.TaskRequestDto;
 import com.javarush.taskmanager.model.dto.TaskResponseDto;

@@ -11,5 +11,4 @@ public class UserRegistrationResponse {
     private Long id;
     private String username;
     private UserRole role;
-    private String accessToken;
 }

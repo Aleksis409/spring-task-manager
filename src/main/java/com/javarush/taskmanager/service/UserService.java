@@ -1,4 +1,4 @@
-package com.javarush.taskmanager.servise;
+package com.javarush.taskmanager.service;
 
 import com.javarush.taskmanager.enums.UserRole;
 import com.javarush.taskmanager.model.entity.User;
@@ -7,7 +7,7 @@ public interface UserService {
 
     User register(String username, String password);
 
-    User getByUsername(String username);
+    User    getByUsername(String username);
 
     User getById(Long id);
 

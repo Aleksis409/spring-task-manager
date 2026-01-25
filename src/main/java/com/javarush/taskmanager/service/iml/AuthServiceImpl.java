@@ -1,5 +1,7 @@
 package com.javarush.taskmanager.service.iml;
 
+import com.javarush.taskmanager.exception.AuthenticationException;
+import com.javarush.taskmanager.exception.InvalidTokenException;
 import com.javarush.taskmanager.model.dto.AuthRequest;
 import com.javarush.taskmanager.model.dto.AuthResponse;
 import com.javarush.taskmanager.model.dto.UserRegistrationRequest;
@@ -13,6 +15,7 @@ import com.javarush.taskmanager.service.AuthService;
 import com.javarush.taskmanager.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -46,7 +49,6 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public UserRegistrationResponse register(UserRegistrationRequest request) {
-
         log.info("User registration started: username={}", request.getUsername());
 
         User user = userService.register(
@@ -66,32 +68,39 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse login(AuthRequest request) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getUsername(),
+                            request.getPassword()
+                    )
+            );
 
-        Authentication authentication = authenticationManager.authenticate(
-                        new UsernamePasswordAuthenticationToken(
-                                request.getUsername(),
-                                request.getPassword()
-                        )
-                );
+            SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();
+            log.info("User logged in: {}", securityUser.getUsername());
 
-        SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();
+            User user = userService.getById(securityUser.getId());
+            String accessToken = jwtService.generateAccessToken(securityUser);
+            String refreshToken = jwtService.generateRefreshToken(securityUser);
 
-        log.info("User logged in: {}", securityUser.getUsername());
+            refreshTokenService.save(user, refreshToken);
+            return new AuthResponse(accessToken, refreshToken);
 
-        User user = userService.getById(securityUser.getId());
-        String accessToken = jwtService.generateAccessToken(securityUser);
-        String refreshToken = jwtService.generateRefreshToken(securityUser);
-
-        refreshTokenService.save(user, refreshToken);
-        return new AuthResponse(accessToken, refreshToken);
+        } catch (BadCredentialsException e) {
+            throw new AuthenticationException("Invalid username or password");
+        }
     }
 
     @Override
     public AuthResponse refresh(String refreshToken) {
+        // Проверяем, что это refresh токен
+        if (!jwtService.isRefreshToken(refreshToken)) {
+            throw new InvalidTokenException("Invalid token type");
+        }
+
         RefreshToken tokenEntity = refreshTokenService.validate(refreshToken);
         SecurityUser user = (SecurityUser) userDetailsService.loadUserByUsername(
-                tokenEntity.getUser()
-                        .getUsername()
+                tokenEntity.getUser().getUsername()
         );
 
         String newAccess = jwtService.generateAccessToken(user);
@@ -107,5 +116,3 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenService.revoke(refreshToken);
     }
 }
-
-

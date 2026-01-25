@@ -1,6 +1,7 @@
 package com.javarush.taskmanager.service.iml;
 
 import com.javarush.taskmanager.enums.TaskStatus;
+import com.javarush.taskmanager.exception.BusinessException;
 import com.javarush.taskmanager.model.dto.TaskRequestDto;
 import com.javarush.taskmanager.model.dto.TaskResponseDto;
 import com.javarush.taskmanager.model.dto.TaskStatisticsResponse;
@@ -138,7 +139,7 @@ public class TaskServiceImpl implements TaskService {
                 .orElseThrow(() -> {
                     log.warn("Task not found: id={}, userId={}",
                             id, currentUser.getId());
-                    return new RuntimeException("Task not found");
+                    return new BusinessException("Task not found with id: " + id);
                 });
     }
 

@@ -64,7 +64,6 @@ public class TaskController {
             @RequestBody @Valid TaskRequestDto request) {
 
         log.info("HTTP POST /api/tasks title={}", request.getTitle());
-
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(taskService.createTask(request));
@@ -86,7 +85,6 @@ public class TaskController {
             @RequestBody @Valid TaskRequestDto request) {
 
         log.info("HTTP PUT /api/tasks/{}", id);
-
         return ResponseEntity.ok(taskService.updateTask(id, request));
     }
 
@@ -122,12 +120,8 @@ public class TaskController {
             @RequestParam(required = false) String fromDeadline,
             @RequestParam(required = false) String toDeadline) {
 
-        log.info("HTTP GET /api/tasks/filter status={}, from={}, to={}",
-                status, fromDeadline, toDeadline);
-
-        return ResponseEntity.ok(
-                taskService.filterTasks(status, fromDeadline, toDeadline)
-        );
+        log.info("HTTP GET /api/tasks/filter status={}, from={}, to={}", status, fromDeadline, toDeadline);
+        return ResponseEntity.ok(taskService.filterTasks(status, fromDeadline, toDeadline));
     }
 
     /**

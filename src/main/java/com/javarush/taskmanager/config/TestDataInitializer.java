@@ -6,6 +6,7 @@ import com.javarush.taskmanager.model.entity.Task;
 import com.javarush.taskmanager.model.entity.User;
 import com.javarush.taskmanager.repository.TaskRepository;
 import com.javarush.taskmanager.repository.UserRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;

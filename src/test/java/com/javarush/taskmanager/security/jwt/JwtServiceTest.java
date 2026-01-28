@@ -34,7 +34,7 @@ class JwtServiceTest {
     private final long refreshExpiration = 86400000;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         jwtService = new JwtService(secretKey, accessExpiration, refreshExpiration);
     }
 
@@ -44,7 +44,7 @@ class JwtServiceTest {
         String token = jwtService.generateAccessToken(securityUser);
         assertNotNull(token);
         assertFalse(token.isEmpty());
-        assertTrue(token.split("\\.").length == 3);
+        assertEquals(3, token.split("\\.").length);
     }
 
     @Test
@@ -53,7 +53,7 @@ class JwtServiceTest {
         String token = jwtService.generateRefreshToken(securityUser);
         assertNotNull(token);
         assertFalse(token.isEmpty());
-        assertTrue(token.split("\\.").length == 3);
+        assertEquals(3, token.split("\\.").length);
     }
 
     @Test
@@ -244,7 +244,7 @@ class JwtServiceTest {
     }
 
     @Test
-    void constructor_ShouldInitializeWithProvidedValues() throws Exception {
+    void constructor_ShouldInitializeWithProvidedValues() {
         when(securityUser.getUsername()).thenReturn("testuser");
         String testSecret = "anotherSecretKeyForTestingtest1234567890123456789012345678901234567890ABCDEF";
         long testAccessExp = 1800000;
@@ -361,4 +361,61 @@ class JwtServiceTest {
         assertNotNull(token);
         assertTrue(jwtService.isTokenValid(token, user));
     }
+
+    @Test
+    void extractUserId_ShouldReturnCorrectUserId() {
+        when(securityUser.getUsername()).thenReturn("testuser");
+        when(securityUser.getId()).thenReturn(42L);
+
+        String token = jwtService.generateAccessToken(securityUser);
+        Long userId = jwtService.extractUserId(token);
+        assertEquals(42L, userId);
+    }
+
+    @Test
+    void extractJti_ShouldReturnJtiFromRefreshToken() {
+        when(securityUser.getUsername()).thenReturn("testuser");
+
+        String token = jwtService.generateRefreshToken(securityUser);
+        String jti = jwtService.extractJti(token);
+        assertNotNull(jti);
+        assertFalse(jti.isBlank());
+    }
+
+    @Test
+    void isRefreshToken_ShouldReturnTrueForRefreshToken() {
+        when(securityUser.getUsername()).thenReturn("testuser");
+        String token = jwtService.generateRefreshToken(securityUser);
+        assertTrue(jwtService.isRefreshToken(token));
+    }
+
+    @Test
+    void isRefreshToken_ShouldReturnFalseForAccessToken() {
+        when(securityUser.getUsername()).thenReturn("testuser");
+        String token = jwtService.generateAccessToken(securityUser);
+        assertFalse(jwtService.isRefreshToken(token));
+    }
+
+    @Test
+    void validateToken_ShouldReturnTrueForValidToken() {
+        when(securityUser.getUsername()).thenReturn("testuser");
+        String token = jwtService.generateAccessToken(securityUser);
+        assertTrue(jwtService.validateToken(token));
+    }
+
+    @Test
+    void validateToken_ShouldReturnFalseForMalformedToken() {
+        assertFalse(jwtService.validateToken("invalid.token.here"));
+    }
+
+    @Test
+    void validateToken_ShouldReturnFalseForExpiredToken() throws Exception {
+        when(securityUser.getUsername()).thenReturn("testuser");
+
+        JwtService shortJwt = new JwtService(secretKey, 1, refreshExpiration);
+        String token = shortJwt.generateAccessToken(securityUser);
+        Thread.sleep(5);
+        assertFalse(shortJwt.validateToken(token));
+    }
+
 }

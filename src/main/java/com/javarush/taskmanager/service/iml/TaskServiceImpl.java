@@ -9,9 +9,11 @@ import com.javarush.taskmanager.model.entity.Task;
 import com.javarush.taskmanager.model.entity.User;
 import com.javarush.taskmanager.model.mapper.TaskMapper;
 import com.javarush.taskmanager.repository.TaskRepository;
+import com.javarush.taskmanager.repository.TaskSpecs;
 import com.javarush.taskmanager.security.CurrentUserProvider;
 import com.javarush.taskmanager.service.TaskService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -106,14 +108,24 @@ public class TaskServiceImpl implements TaskService {
 
         User currentUser = getCurrentUserEntity();
 
-        log.info("Filtering tasks for userId={}, status={}, from={}, to={}",
-                currentUser.getId(), status, fromDeadline, toDeadline);
+        Specification<Task> spec = TaskSpecs.byOwner(currentUser);
 
-        TaskStatus taskStatus = status != null ? TaskStatus.valueOf(status) : null;
-        LocalDate from = fromDeadline != null ? LocalDate.parse(fromDeadline) : null;
-        LocalDate to = toDeadline != null ? LocalDate.parse(toDeadline) : null;
+        if (status != null) {
+            spec = spec.and(TaskSpecs.hasStatus(TaskStatus.valueOf(status))
+            );
+        }
 
-        return taskRepository.filterTasks(currentUser, taskStatus, from, to)
+        if (fromDeadline != null) {
+            spec = spec.and(TaskSpecs.deadlineFrom(LocalDate.parse(fromDeadline))
+            );
+        }
+
+        if (toDeadline != null) {
+            spec = spec.and(TaskSpecs.deadlineTo(LocalDate.parse(toDeadline))
+            );
+        }
+
+        return taskRepository.findAll(spec)
                 .stream()
                 .map(taskMapper::toResponseDto)
                 .toList();

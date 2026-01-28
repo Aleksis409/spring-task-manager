@@ -1,7 +1,6 @@
 package com.javarush.taskmanager.integration;
 
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.annotation.DirtiesContext;
 
@@ -36,7 +35,6 @@ class AdminApiIT extends AbstractIntegrationTest {
                 .statusCode(403);
     }
 
-    @Disabled
     @Test
     void shouldAllowAdminToChangeRole() {
         String adminToken = login("admin", "password");

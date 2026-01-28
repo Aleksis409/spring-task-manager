@@ -9,10 +9,12 @@ import java.util.List;
 import java.util.Optional;
 
 import com.javarush.taskmanager.model.entity.User;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface TaskRepository extends JpaRepository<Task, Long> {
+public interface TaskRepository extends JpaRepository<Task, Long>,
+        JpaSpecificationExecutor<Task> {
 
     /**
      * Returns all tasks belonging to a specific user.
@@ -32,7 +34,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     /**
      * Finds a task by id and owner.
      *
-     * @param id task identifier
+     * @param id    task identifier
      * @param owner task owner
      * @return Optional task if found
      */
@@ -50,9 +52,11 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
               AND (:status IS NULL OR t.status = :status)
               AND (:from IS NULL OR t.deadline >= :from)
               AND (:to IS NULL OR t.deadline <= :to)
-           """)
-    List<Task> filterTasks(@Param("owner") User owner,
-                           @Param("status") TaskStatus status,
-                           @Param("from") LocalDate from,
-                           @Param("to") LocalDate to);
+            """)
+    List<Task> filterTasks(
+            @Param("owner") User owner,
+            @Param("status") TaskStatus status,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to
+    );
 }

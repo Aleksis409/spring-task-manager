@@ -13,9 +13,11 @@ import com.javarush.taskmanager.security.CurrentUserProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -232,12 +234,7 @@ class TaskServiceImplTest {
 
         when(currentUserProvider.getCurrentUserId()).thenReturn(userId);
         when(userService.getById(userId)).thenReturn(testUser);
-        when(taskRepository.filterTasks(
-                eq(testUser),
-                eq(TaskStatus.PENDING),
-                eq(LocalDate.parse("2024-01-01")),
-                eq(LocalDate.parse("2024-12-31"))
-        )).thenReturn(filteredTasks);
+        when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any())).thenReturn(filteredTasks);
         when(taskMapper.toResponseDto(filteredTask)).thenReturn(taskDto);
 
         List<TaskResponseDto> result = taskService.filterTasks(status, fromDeadline, toDeadline);
@@ -245,16 +242,7 @@ class TaskServiceImplTest {
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(taskDto, result.get(0));
-
-        verify(currentUserProvider, times(1)).getCurrentUserId();
-        verify(userService, times(1)).getById(userId);
-        verify(taskRepository, times(1)).filterTasks(
-                eq(testUser),
-                eq(TaskStatus.PENDING),
-                eq(LocalDate.parse("2024-01-01")),
-                eq(LocalDate.parse("2024-12-31"))
-        );
-        verify(taskMapper, times(1)).toResponseDto(filteredTask);
+        verify(taskRepository).findAll(ArgumentMatchers.<Specification<Task>>any());
     }
 
     @Test
@@ -281,34 +269,24 @@ class TaskServiceImplTest {
 
     @Test
     void filterTasks_ShouldHandleNullParameters() {
+
         Task filteredTask = createTaskWithId(taskId);
         List<Task> filteredTasks = List.of(filteredTask);
         TaskResponseDto taskDto = createTaskResponseDto(taskId);
 
         when(currentUserProvider.getCurrentUserId()).thenReturn(userId);
         when(userService.getById(userId)).thenReturn(testUser);
-        when(taskRepository.filterTasks(
-                eq(testUser),
-                eq(null),
-                eq(null),
-                eq(null)
-        )).thenReturn(filteredTasks);
+        when(taskRepository.findAll(ArgumentMatchers.<Specification<Task>>any())).thenReturn(filteredTasks);
+
         when(taskMapper.toResponseDto(filteredTask)).thenReturn(taskDto);
 
         List<TaskResponseDto> result = taskService.filterTasks(null, null, null);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-
-        verify(currentUserProvider, times(1)).getCurrentUserId();
-        verify(userService, times(1)).getById(userId);
-        verify(taskRepository, times(1)).filterTasks(
-                eq(testUser),
-                eq(null),
-                eq(null),
-                eq(null)
-        );
+        verify(taskRepository).findAll(ArgumentMatchers.<Specification<Task>>any());
     }
+
 
     @Test
     void createTask_ShouldHandleNullDeadline() {

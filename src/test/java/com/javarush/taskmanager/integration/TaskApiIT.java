@@ -215,6 +215,24 @@ class TaskApiIT extends AbstractIntegrationTest {
                 .body("field", hasItems("title", "status"));
     }
 
+    @Test
+    void shouldFilterByDeadlineRange() {
+
+        String token = registerAndLogin("datefilter", "password");
+
+        createTaskWithDeadline(token, "early", LocalDate.now().plusDays(1));
+        createTaskWithDeadline(token, "late", LocalDate.now().plusDays(10));
+
+        given()
+                .auth().oauth2(token)
+                .queryParam("fromDeadline", LocalDate.now().plusDays(5).toString())
+                .get("/api/tasks/filter")
+                .then()
+                .statusCode(200)
+                .body("$.size()", is(1))
+                .body("[0].title", equalTo("late"));
+    }
+
     private void createTask(String token, String title, String status) {
         given()
                 .auth().oauth2(token)
@@ -225,6 +243,22 @@ class TaskApiIT extends AbstractIntegrationTest {
                           "status":"%s"
                         }
                         """.formatted(title, status))
+                .post("/api/tasks")
+                .then()
+                .statusCode(201);
+    }
+
+    private void createTaskWithDeadline(String token, String title, LocalDate deadline) {
+        given()
+                .auth().oauth2(token)
+                .contentType(ContentType.JSON)
+                .body("""
+            {
+              "title":"%s",
+              "status":"PENDING",
+              "deadline":"%s"
+            }
+            """.formatted(title, deadline))
                 .post("/api/tasks")
                 .then()
                 .statusCode(201);

@@ -2,7 +2,8 @@ package com.javarush.taskmanager.integration;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.BeforeAll;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -20,6 +21,7 @@ import static io.restassured.RestAssured.given;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@Slf4j
 public abstract class AbstractIntegrationTest {
 
     @LocalServerPort
@@ -27,8 +29,6 @@ public abstract class AbstractIntegrationTest {
 
     @Autowired
     protected ApplicationContext applicationContext;
-
-    protected static DatabaseCleaner staticDatabaseCleaner;
 
     private static final PostgreSQLContainer<?> postgres;
 
@@ -40,6 +40,7 @@ public abstract class AbstractIntegrationTest {
                 .withReuse(true)
                 .withStartupTimeout(Duration.ofMinutes(3));
         postgres.start();
+        log.info("Test PostgreSQL container started on port: {}", postgres.getFirstMappedPort());
     }
 
     @DynamicPropertySource
@@ -55,24 +56,17 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.datasource.hikari.connection-test-query", () -> "SELECT 1");
     }
 
-    @BeforeAll
-    static void beforeAll(ApplicationContext context) {
-        if (context != null) {
-            DatabaseCleaner cleaner = context.getBean(DatabaseCleaner.class);
-            if (cleaner != null) {
-                cleaner.cleanTables();
-                staticDatabaseCleaner = cleaner;
-            }
-        }
+    @PostConstruct
+    public void init() {
+        log.info("Initializing test class: {}", this.getClass().getSimpleName());
     }
 
     @BeforeEach
-    void setupRestAssured() {
+    void setUp() {
         RestAssured.port = port;
         RestAssured.baseURI = "http://localhost";
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
-
 
     protected String login(String username, String password) {
         return given()

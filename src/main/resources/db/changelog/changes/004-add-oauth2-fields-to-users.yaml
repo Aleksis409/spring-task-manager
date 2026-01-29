@@ -1,0 +1,69 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-add-oauth2-fields-to-users-complete
+      author: Artemov_AV
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: auth_provider
+                  type: VARCHAR(20)
+                  defaultValue: "local"
+                  constraints:
+                    nullable: false
+
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: true
+
+              - column:
+                  name: picture
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: true
+
+              - column:
+                  name: provider_id
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: true
+
+        - sql:
+            sql: >
+              UPDATE users 
+              SET email = username,
+                  name = username
+              WHERE email IS NULL
+
+        - addUniqueConstraint:
+            tableName: users
+            columnNames: email
+            constraintName: uk_users_email
+            deferrable: false
+            disabled: false
+
+        - createIndex:
+            tableName: users
+            indexName: idx_users_email
+            columns:
+              - column:
+                  name: email
+
+        - createIndex:
+            tableName: users
+            indexName: idx_users_provider_id
+            columns:
+              - column:
+                  name: provider_id

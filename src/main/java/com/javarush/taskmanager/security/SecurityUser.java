@@ -1,41 +1,42 @@
 package com.javarush.taskmanager.security;
 
 import com.javarush.taskmanager.model.entity.User;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class SecurityUser implements UserDetails {
+@Getter
+public class SecurityUser implements UserDetails, OAuth2User {
 
-    private final Long id;
-    private final String username;
-    private final String password;
+    private final User user;
     private final Collection<? extends GrantedAuthority> authorities;
 
+    private Map<String, Object> attributes;
+    private String nameAttributeKey;
+
     public SecurityUser(User user) {
-        this.id = user.getId();
-        this.username = user.getUsername();
-        this.password = user.getPassword();
+        this.user = user;
         this.authorities = List.of(
                 new SimpleGrantedAuthority(user.getRole().name())
         );
+        this.attributes = new HashMap<>();
+        this.nameAttributeKey = "username";
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    @Override
-    public String getUsername() {
-        return username;
-    }
-
-    @Override
-    public String getPassword() {
-        return password;
+    public SecurityUser(User user, Map<String, Object> attributes, String nameAttributeKey) {
+        this.user = user;
+        this.authorities = List.of(
+                new SimpleGrantedAuthority(user.getRole().name())
+        );
+        this.attributes = attributes != null ? attributes : new HashMap<>();
+        this.nameAttributeKey = nameAttributeKey;
     }
 
     @Override

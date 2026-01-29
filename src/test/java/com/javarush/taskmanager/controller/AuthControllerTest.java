@@ -38,6 +38,7 @@ class AuthControllerTest {
     private AuthRequest authRequest;
     private AuthResponse authResponse;
     private LogoutRequest logoutRequest;
+    private RefreshTokenRequest refreshTokenRequest;
 
     private final Long userId = 1L;
     private final String username = "testuser";
@@ -64,6 +65,9 @@ class AuthControllerTest {
 
         logoutRequest = new LogoutRequest();
         logoutRequest.setRefreshToken(refreshToken);
+
+        refreshTokenRequest = new RefreshTokenRequest();
+        refreshTokenRequest.setRefreshToken(refreshToken);
     }
 
     @Test
@@ -118,7 +122,8 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registrationRequest)))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.error", containsString("Internal server error: Database error")));
+                .andExpect(jsonPath("$.error",
+                        containsString("Internal server error: Database error")));
 
         verify(authService, times(1)).register(any(UserRegistrationRequest.class));
     }
@@ -162,7 +167,8 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.error", containsString("Internal server error: Invalid credentials")));
+                .andExpect(jsonPath("$.error",
+                        containsString("Internal server error: Invalid credentials")));
 
         verify(authService, times(1)).login(any(AuthRequest.class));
     }
@@ -176,7 +182,8 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.error", containsString("Internal server error: Authentication failed")));
+                .andExpect(jsonPath("$.error",
+                        containsString("Internal server error: Authentication failed")));
 
         verify(authService, times(1)).login(any(AuthRequest.class));
     }
@@ -216,7 +223,8 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.error", containsString("Internal server error: Invalid token")));
+                .andExpect(jsonPath("$.error",
+                        containsString("Internal server error: Invalid token")));
 
         verify(authService, times(1)).logout(invalidToken);
     }
@@ -277,7 +285,8 @@ class AuthControllerTest {
     void register_ShouldHandleSpecialCharactersInUsername() throws Exception {
         String specialUsername = "user@email.com+test";
         UserRegistrationRequest specialRequest = new UserRegistrationRequest(specialUsername, password);
-        UserRegistrationResponse specialResponse = new UserRegistrationResponse(3L, specialUsername, UserRole.ROLE_USER);
+        UserRegistrationResponse specialResponse =
+                new UserRegistrationResponse(3L, specialUsername, UserRole.ROLE_USER);
 
         when(authService.register(any(UserRegistrationRequest.class))).thenReturn(specialResponse);
 
@@ -337,7 +346,8 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(""))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error", is("Request body is required and must be valid JSON")));
+                .andExpect(jsonPath("$.error",
+                        is("Request body is required and must be valid JSON")));
 
         verify(authService, never()).register(any());
     }
@@ -348,7 +358,8 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(""))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error", is("Request body is required and must be valid JSON")));
+                .andExpect(jsonPath("$.error",
+                        is("Request body is required and must be valid JSON")));
 
         verify(authService, never()).login(any());
     }
@@ -359,7 +370,8 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(""))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error", is("Request body is required and must be valid JSON")));
+                .andExpect(jsonPath("$.error",
+                        is("Request body is required and must be valid JSON")));
 
         verify(authService, never()).logout(any());
     }
@@ -372,7 +384,8 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidJson))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error", containsString("Request body is required and must be valid JSON")));
+                .andExpect(jsonPath("$.error",
+                        containsString("Request body is required and must be valid JSON")));
 
         verify(authService, never()).register(any());
     }
@@ -385,8 +398,254 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(arrayJson))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error", containsString("Request body is required and must be valid JSON")));
+                .andExpect(jsonPath("$.error",
+                        containsString("Request body is required and must be valid JSON")));
 
         verify(authService, never()).register(any());
+    }
+
+    @Test
+    void refresh_ShouldReturnNewTokens() throws Exception {
+        AuthResponse newAuthResponse = new AuthResponse("new.access.token", "new.refresh.token");
+        when(authService.refresh(refreshToken)).thenReturn(newAuthResponse);
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(refreshTokenRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token", is("new.access.token")))
+                .andExpect(jsonPath("$.refreshToken", is("new.refresh.token")));
+
+        verify(authService, times(1)).refresh(refreshToken);
+    }
+
+    @Test
+    void refresh_ShouldHandleInvalidRefreshToken() throws Exception {
+        String invalidToken = "invalid.refresh.token";
+        refreshTokenRequest.setRefreshToken(invalidToken);
+
+        when(authService.refresh(invalidToken))
+                .thenThrow(new RuntimeException("Invalid refresh token"));
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(refreshTokenRequest)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error",
+                        containsString("Internal server error: Invalid refresh token")));
+
+        verify(authService, times(1)).refresh(invalidToken);
+    }
+
+    @Test
+    void refresh_ShouldHandleExpiredRefreshToken() throws Exception {
+        String expiredToken = "expired.refresh.token";
+        refreshTokenRequest.setRefreshToken(expiredToken);
+
+        when(authService.refresh(expiredToken))
+                .thenThrow(new RuntimeException("Refresh token expired"));
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(refreshTokenRequest)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error",
+                        containsString("Internal server error: Refresh token expired")));
+
+        verify(authService, times(1)).refresh(expiredToken);
+    }
+
+    @Test
+    void refresh_ShouldHandleNullRefreshToken() throws Exception {
+        refreshTokenRequest.setRefreshToken(null);
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(refreshTokenRequest)))
+                .andExpect(status().isOk());
+
+        verify(authService, never()).refresh(anyString());
+    }
+
+    @Test
+    void refresh_ShouldHandleEmptyRefreshToken() throws Exception {
+        refreshTokenRequest.setRefreshToken("");
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(refreshTokenRequest)))
+                .andExpect(status().isOk());
+
+        verify(authService, times(1)).refresh("");
+    }
+
+    @Test
+    void refresh_ShouldHandleRevokedRefreshToken() throws Exception {
+        String revokedToken = "revoked.refresh.token";
+        refreshTokenRequest.setRefreshToken(revokedToken);
+
+        when(authService.refresh(revokedToken))
+                .thenThrow(new RuntimeException("Refresh token revoked"));
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(refreshTokenRequest)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error",
+                        containsString("Internal server error: Refresh token revoked")));
+
+        verify(authService, times(1)).refresh(revokedToken);
+    }
+
+    @Test
+    void refresh_ShouldReturnDifferentTokensEachTime() throws Exception {
+        AuthResponse firstResponse = new AuthResponse("token1", "refresh1");
+        when(authService.refresh(refreshToken)).thenReturn(firstResponse);
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(refreshTokenRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token", is("token1")))
+                .andExpect(jsonPath("$.refreshToken", is("refresh1")));
+
+        AuthResponse secondResponse = new AuthResponse("token2", "refresh2");
+        when(authService.refresh(refreshToken)).thenReturn(secondResponse);
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(refreshTokenRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token", is("token2")))
+                .andExpect(jsonPath("$.refreshToken", is("refresh2")));
+
+        verify(authService, times(2)).refresh(refreshToken);
+    }
+
+    @Test
+    void refresh_ShouldHandleNullRequestBody() throws Exception {
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is("Request body is required and must be valid JSON")));
+
+        verify(authService, never()).refresh(anyString());
+    }
+
+    @Test
+    void refresh_ShouldHandleInvalidJsonFormat() throws Exception {
+        String invalidJson = "{refreshToken: \"token\"}"; // без кавычек у ключа
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", containsString("Request body is required and must be valid JSON")));
+
+        verify(authService, never()).refresh(anyString());
+    }
+
+    @Test
+    void refresh_ShouldHandleWrongJsonType() throws Exception {
+        String arrayJson = "[\"refreshToken\"]";
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(arrayJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", containsString("Request body is required and must be valid JSON")));
+
+        verify(authService, never()).refresh(anyString());
+    }
+
+    @Test
+    void refresh_ShouldHandleVeryLongRefreshToken() throws Exception {
+        String longToken = "t".repeat(1000);
+        refreshTokenRequest.setRefreshToken(longToken);
+
+        AuthResponse response = new AuthResponse("newToken", "newRefresh");
+        when(authService.refresh(longToken)).thenReturn(response);
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(refreshTokenRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token", is("newToken")));
+
+        verify(authService, times(1)).refresh(longToken);
+    }
+
+    @Test
+    void fullAuthenticationFlowWithRefresh_ShouldWork() throws Exception {
+        when(authService.register(any(UserRegistrationRequest.class))).thenReturn(registrationResponse);
+        when(authService.login(any(AuthRequest.class))).thenReturn(authResponse);
+
+        AuthResponse refreshedResponse =
+                new AuthResponse("refreshed.access.token", "refreshed.refresh.token");
+        when(authService.refresh(refreshToken)).thenReturn(refreshedResponse);
+
+        doNothing().when(authService).logout("refreshed.refresh.token");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registrationRequest)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(authRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token", is(accessToken)));
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(refreshTokenRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token", is("refreshed.access.token")))
+                .andExpect(jsonPath("$.refreshToken", is("refreshed.refresh.token")));
+
+        LogoutRequest newLogoutRequest = new LogoutRequest();
+        newLogoutRequest.setRefreshToken("refreshed.refresh.token");
+
+        mockMvc.perform(post("/api/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(newLogoutRequest)))
+                .andExpect(status().isNoContent());
+
+        // Проверка вызовов
+        verify(authService, times(1)).register(any(UserRegistrationRequest.class));
+        verify(authService, times(1)).login(any(AuthRequest.class));
+        verify(authService, times(1)).refresh(refreshToken);
+        verify(authService, times(1)).logout("refreshed.refresh.token");
+    }
+
+    @Test
+    void refresh_ShouldHandleMissingRefreshTokenField() throws Exception {
+        String jsonWithoutField = "{}";
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonWithoutField))
+                .andExpect(status().isOk());
+
+        verify(authService, times(1)).refresh(null);
+    }
+
+    @Test
+    void refresh_ShouldHandleSpecialCharactersInToken() throws Exception {
+        String specialToken = "token.with.special@chars#123!test";
+        refreshTokenRequest.setRefreshToken(specialToken);
+
+        AuthResponse response = new AuthResponse("newToken", "newRefresh");
+        when(authService.refresh(specialToken)).thenReturn(response);
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(refreshTokenRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token", is("newToken")));
+
+        verify(authService, times(1)).refresh(specialToken);
     }
 }

@@ -3,8 +3,11 @@ package com.javarush.taskmanager.service.iml;
 import com.javarush.taskmanager.enums.UserRole;
 import com.javarush.taskmanager.exception.BusinessException;
 import com.javarush.taskmanager.model.entity.User;
+import com.javarush.taskmanager.repository.RefreshTokenRepository;
+import com.javarush.taskmanager.repository.TaskRepository;
 import com.javarush.taskmanager.repository.UserRepository;
 import com.javarush.taskmanager.service.UserService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,11 +20,17 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final TaskRepository taskRepository;
 
     public UserServiceImpl(UserRepository userRepository,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           RefreshTokenRepository refreshTokenRepository,
+                           TaskRepository taskRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.taskRepository = taskRepository;
     }
 
     @Override
@@ -88,5 +97,19 @@ public class UserServiceImpl implements UserService {
         user.changeRole(role);
 
         log.info("Role changed successfully for userId={}", userId);
+    }
+
+    @Transactional
+    public void deleteUser(Long userId) {
+        log.info("Deleting user with id={}", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        refreshTokenRepository.deleteAllByUser(user);
+        taskRepository.deleteAllByOwner(user);
+        userRepository.delete(user);
+
+        log.info("User deleted: {}", userId);
     }
 }

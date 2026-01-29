@@ -14,4 +14,6 @@ public interface UserService {
     void changePassword(Long userId, String newPassword);
 
     void changeRole(Long userId, UserRole role);
+
+    void deleteUser(Long id);
 }

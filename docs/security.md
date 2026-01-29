@@ -19,8 +19,8 @@ Refresh Token
 - При logout refresh-token инвалидируется.
 
 Роли пользователей
-ROLE_USER,
-ROLE_ADMIN
+- ROLE_USER — обычный пользователь, доступ к своим данным и задачам.
+- ROLE_ADMIN — администратор, может изменять роли пользователей.
 
 Контроль доступа
 @PreAuthorize

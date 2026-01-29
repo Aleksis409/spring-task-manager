@@ -12,5 +12,5 @@
 - /actuator/info
 - /actuator/metrics
 
-При интеграции с Prometheus:
+Для интеграции с Prometheus:
 - /actuator/prometheus

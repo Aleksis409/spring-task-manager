@@ -59,4 +59,6 @@ public interface TaskRepository extends JpaRepository<Task, Long>,
             @Param("from") LocalDate from,
             @Param("to") LocalDate to
     );
+
+    void deleteAllByOwner(User owner);
 }

@@ -44,4 +44,8 @@ public class User {
     public void changeRole(UserRole role) {
         this.role = role;
     }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
 }

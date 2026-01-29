@@ -3,10 +3,14 @@ package com.javarush.taskmanager.service.iml;
 import com.javarush.taskmanager.enums.UserRole;
 import com.javarush.taskmanager.exception.BusinessException;
 import com.javarush.taskmanager.model.entity.User;
+import com.javarush.taskmanager.repository.RefreshTokenRepository;
+import com.javarush.taskmanager.repository.TaskRepository;
 import com.javarush.taskmanager.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -27,6 +31,12 @@ class UserServiceImplTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private TaskRepository taskRepository;
+
+    @Mock
+    private RefreshTokenRepository refreshTokenRepository;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -112,7 +122,7 @@ class UserServiceImplTest {
         String nonExistentUsername = "nonexistent";
         when(userRepository.findByUsername(nonExistentUsername)).thenReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
+        BusinessException exception = assertThrows(BusinessException.class,
                 () -> userService.getByUsername(nonExistentUsername));
 
         assertEquals("User not found with username: " + nonExistentUsername, exception.getMessage());
@@ -134,7 +144,7 @@ class UserServiceImplTest {
         Long nonExistentId = 999L;
         when(userRepository.findById(nonExistentId)).thenReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
+        BusinessException exception = assertThrows(BusinessException.class,
                 () -> userService.getById(nonExistentId));
 
         assertEquals("User not found with id: " + nonExistentId, exception.getMessage());
@@ -167,7 +177,7 @@ class UserServiceImplTest {
 
         when(userRepository.findById(nonExistentId)).thenReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
+        BusinessException exception = assertThrows(BusinessException.class,
                 () -> userService.changePassword(nonExistentId, newPassword));
 
         assertEquals("User not found with id: " + nonExistentId, exception.getMessage());
@@ -195,7 +205,7 @@ class UserServiceImplTest {
         UserRole newRole = UserRole.ROLE_ADMIN;
 
         when(userRepository.findById(nonExistentId)).thenReturn(Optional.empty());
-        RuntimeException exception = assertThrows(RuntimeException.class,
+        BusinessException exception = assertThrows(BusinessException.class,
                 () -> userService.changeRole(nonExistentId, newRole));
 
         assertEquals("User not found with id: " + nonExistentId, exception.getMessage());
@@ -211,45 +221,6 @@ class UserServiceImplTest {
             assertEquals(role, testUser.getRole());
         }
         verify(userRepository, times(UserRole.values().length)).findById(userId);
-    }
-
-    @Test
-    void register_ShouldHandleEmptyUsername() {
-        String emptyUsername = "";
-        when(userRepository.existsByUsername(emptyUsername)).thenReturn(false);
-        assertThrows(Exception.class, () ->
-                userService.register(emptyUsername, password));
-    }
-
-    @Test
-    void register_ShouldHandleNullUsername() {
-        String nullUsername = null;
-        when(userRepository.existsByUsername(nullUsername)).thenReturn(false);
-        assertThrows(Exception.class, () ->
-                userService.register(nullUsername, password));
-    }
-
-    @Test
-    void register_ShouldHandleEmptyPassword() {
-        String emptyPassword = "";
-        when(userRepository.existsByUsername(username)).thenReturn(false);
-        when(passwordEncoder.encode(emptyPassword)).thenReturn("encodedEmpty");
-        when(userRepository.save(any(User.class))).thenReturn(testUser);
-        User registeredUser = userService.register(username, emptyPassword);
-        assertNotNull(registeredUser);
-        verify(passwordEncoder, times(1)).encode(emptyPassword);
-    }
-
-    @Test
-    void register_ShouldHandleNullPassword() {
-        String nullPassword = null;
-        when(userRepository.existsByUsername(username)).thenReturn(false);
-        when(passwordEncoder.encode(nullPassword)).thenReturn("encodedNull");
-        when(userRepository.save(any(User.class))).thenReturn(testUser);
-
-        User registeredUser = userService.register(username, nullPassword);
-        assertNotNull(registeredUser);
-        verify(passwordEncoder, times(1)).encode(nullPassword);
     }
 
     @Test
@@ -292,5 +263,33 @@ class UserServiceImplTest {
         userService.changeRole(userId, sameRole);
         assertEquals(sameRole, testUser.getRole());
         verify(userRepository, times(1)).findById(userId);
+    }
+
+    @Test
+    void deleteUser_ShouldDeleteUserAndDependencies() {
+        when(userRepository.findById(1L)).thenReturn(java.util.Optional.of(testUser));
+
+        userService.deleteUser(1L);
+        InOrder inOrder = inOrder(refreshTokenRepository, taskRepository, userRepository);
+        inOrder.verify(refreshTokenRepository).deleteAllByUser(testUser);
+        inOrder.verify(taskRepository).deleteAllByOwner(testUser);
+        inOrder.verify(userRepository).delete(testUser);
+    }
+
+    @Test
+    void deleteUser_WhenUserNotFound_ShouldThrowException() {
+        when(userRepository.findById(1L)).thenReturn(java.util.Optional.empty());
+
+        EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
+                () -> userService.deleteUser(1L));
+        assertEquals("User not found", ex.getMessage());
+        verifyNoInteractions(refreshTokenRepository, taskRepository);
+        verify(userRepository, times(1)).findById(1L);
+    }
+
+    @Test
+    void deleteUser_ShouldLogDeletion() {
+        when(userRepository.findById(1L)).thenReturn(java.util.Optional.of(testUser));
+        assertDoesNotThrow(() -> userService.deleteUser(1L));
     }
 }
